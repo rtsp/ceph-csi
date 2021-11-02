@@ -1,11 +1,13 @@
 #!/bin/bash -E
 
-ROOK_VERSION=${ROOK_VERSION:-"v1.4.9"}
+ROOK_VERSION=${ROOK_VERSION:-"v1.6.2"}
 ROOK_DEPLOY_TIMEOUT=${ROOK_DEPLOY_TIMEOUT:-300}
 ROOK_URL="https://raw.githubusercontent.com/rook/rook/${ROOK_VERSION}/cluster/examples/kubernetes/ceph"
 ROOK_BLOCK_POOL_NAME=${ROOK_BLOCK_POOL_NAME:-"newrbdpool"}
-KUBECTL_RETRY=5
-KUBECTL_RETRY_DELAY=10
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+# shellcheck disable=SC1091
+[ ! -e "${SCRIPT_DIR}"/utils.sh ] || source "${SCRIPT_DIR}"/utils.sh
 
 trap log_errors ERR
 
@@ -30,58 +32,16 @@ rook_version() {
 	echo "${ROOK_VERSION#v}" | cut -d'.' -f"${1}"
 }
 
-kubectl_retry() {
-    local retries=0 action="${1}" ret=0 stdout stderr
-    shift
-
-    # temporary files for kubectl output
-    stdout=$(mktemp rook-kubectl-stdout.XXXXXXXX)
-    stderr=$(mktemp rook-kubectl-stderr.XXXXXXXX)
-
-    while ! kubectl "${action}" "${@}" 2>"${stderr}" 1>"${stdout}"
-    do
-        # in case of a failure when running "create", ignore errors with "AlreadyExists"
-        if [ "${action}" == 'create' ]
-        then
-            # count lines in stderr that do not have "AlreadyExists"
-            ret=$(grep -cvw 'AlreadyExists' "${stderr}")
-            if [ "${ret}" -eq 0 ]
-            then
-                # Success! stderr is empty after removing all "AlreadyExists" lines.
-                break
-            fi
-        fi
-
-        retries=$((retries+1))
-        if [ ${retries} -eq ${KUBECTL_RETRY} ]
-        then
-            ret=1
-            break
-        fi
-
-	# log stderr and empty the tmpfile
-	cat "${stderr}" > /dev/stderr
-	true > "${stderr}"
-	echo "kubectl_retry ${*} failed, will retry in ${KUBECTL_RETRY_DELAY} seconds"
-
-        sleep ${KUBECTL_RETRY_DELAY}
-
-	# reset ret so that a next working kubectl does not cause a non-zero
-	# return of the function
-        ret=0
-    done
-
-    # write output so that calling functions can consume it
-    cat "${stdout}" > /dev/stdout
-    cat "${stderr}" > /dev/stderr
-
-    rm -f "${stdout}" "${stderr}"
-
-    return ${ret}
-}
-
 function deploy_rook() {
         kubectl_retry create -f "${ROOK_URL}/common.yaml"
+
+        # If rook version is > 1.5 , we will apply CRDs.
+        ROOK_MAJOR=$(rook_version 1)
+        ROOK_MINOR=$(rook_version 2)
+        if  [ "${ROOK_MAJOR}" -eq 1 ] && [ "${ROOK_MINOR}" -ge 5 ];
+	  then
+	      kubectl_retry create -f "${ROOK_URL}/crds.yaml"
+	  fi
         kubectl_retry create -f "${ROOK_URL}/operator.yaml"
         # Override the ceph version which rook installs by default.
         if  [ -z "${ROOK_CEPH_CLUSTER_IMAGE}" ]
@@ -92,7 +52,9 @@ function deploy_rook() {
             TEMP_DIR="$(mktemp -d)"
             curl -o "${TEMP_DIR}"/cluster-test.yaml "${ROOK_URL}/cluster-test.yaml"
             sed -i "s|image.*|${ROOK_CEPH_CLUSTER_VERSION_IMAGE_PATH}|g" "${TEMP_DIR}"/cluster-test.yaml
-            cat  "${TEMP_DIR}"/cluster-test.yaml
+            sed -i "s/config: |/config: |\n    \[mon\]\n    mon_warn_on_insecure_global_id_reclaim_allowed = false/g" "${TEMP_DIR}"/cluster-test.yaml
+            sed -i "s/healthCheck:/healthCheck:\n    livenessProbe:\n      mon:\n        disabled: true\n      mgr:\n        disabled: true\n      mds:\n        disabled: true/g" "${TEMP_DIR}"/cluster-test.yaml
+			cat  "${TEMP_DIR}"/cluster-test.yaml
             kubectl_retry create -f "${TEMP_DIR}/cluster-test.yaml"
             rm -rf "${TEMP_DIR}"
         fi
@@ -123,6 +85,12 @@ function teardown_rook() {
 	kubectl delete -f "${ROOK_URL}/toolbox.yaml"
 	kubectl delete -f "${ROOK_URL}/cluster-test.yaml"
 	kubectl delete -f "${ROOK_URL}/operator.yaml"
+	ROOK_MAJOR=$(rook_version 1)
+      ROOK_MINOR=$(rook_version 2)
+      if  [ "${ROOK_MAJOR}" -eq 1 ] && [ "${ROOK_MINOR}" -ge 5 ];
+	then
+	      kubectl delete -f "${ROOK_URL}/crds.yaml"
+	fi
 	kubectl delete -f "${ROOK_URL}/common.yaml"
 }
 
