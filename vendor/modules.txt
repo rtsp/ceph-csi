@@ -69,7 +69,7 @@ github.com/cenkalti/backoff/v3
 ## explicit; go 1.16
 github.com/ceph/ceph-csi/api/deploy/kubernetes/rbd
 github.com/ceph/ceph-csi/api/deploy/ocp
-# github.com/ceph/go-ceph v0.12.0
+# github.com/ceph/go-ceph v0.13.0
 ## explicit; go 1.12
 github.com/ceph/go-ceph/cephfs/admin
 github.com/ceph/go-ceph/common/commands
@@ -94,6 +94,7 @@ github.com/csi-addons/replication-lib-utils/protosanitizer
 # github.com/csi-addons/spec v0.1.2-0.20211220083702-c779b23cf97c
 ## explicit
 github.com/csi-addons/spec/lib/go/identity
+github.com/csi-addons/spec/lib/go/reclaimspace
 github.com/csi-addons/spec/lib/go/replication
 # github.com/cyphar/filepath-securejoin v0.2.2
 ## explicit
