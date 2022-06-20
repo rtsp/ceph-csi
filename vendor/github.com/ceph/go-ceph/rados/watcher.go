@@ -1,6 +1,3 @@
-//go:build ceph_preview
-// +build ceph_preview
-
 package rados
 
 /*
@@ -19,6 +16,8 @@ import (
 	"sync"
 	"time"
 	"unsafe"
+
+	"github.com/ceph/go-ceph/internal/log"
 )
 
 type (
@@ -67,7 +66,6 @@ var (
 )
 
 // Watch creates a Watcher for the specified object.
-//  PREVIEW
 //
 // A Watcher receives all notifications that are sent to the object on which it
 // has been created. It exposes two read-only channels: Events() receives all
@@ -101,7 +99,6 @@ func (ioctx *IOContext) Watch(obj string) (*Watcher, error) {
 
 // WatchWithTimeout creates a watcher on an object. Same as Watcher(), but
 // different timeout than the default can be specified.
-//  PREVIEW
 //
 // Implements:
 //  int rados_watch3(rados_ioctx_t io, const char *o, uint64_t *cookie,
@@ -140,26 +137,22 @@ func (ioctx *IOContext) WatchWithTimeout(oid string, timeout time.Duration) (*Wa
 }
 
 // ID returns the WatcherId of the Watcher
-//  PREVIEW
 func (w *Watcher) ID() WatcherID {
 	return w.id
 }
 
 // Events returns a read-only channel, that receives all notifications that are
 // sent to the object of the Watcher.
-//  PREVIEW
 func (w *Watcher) Events() <-chan NotifyEvent {
 	return w.events
 }
 
 // Errors returns a read-only channel, that receives all errors for the Watcher.
-//  PREVIEW
 func (w *Watcher) Errors() <-chan error {
 	return w.errors
 }
 
 // Check on the status of a Watcher.
-//  PREVIEW
 //
 // Returns the time since it was last confirmed. If there is an error, the
 // Watcher is no longer valid, and should be destroyed with the Delete() method.
@@ -175,7 +168,6 @@ func (w *Watcher) Check() (time.Duration, error) {
 }
 
 // Delete the watcher. This closes both the event and error channel.
-//  PREVIEW
 //
 // Implements:
 //  int rados_unwatch2(rados_ioctx_t io, uint64_t cookie)
@@ -201,7 +193,6 @@ func (w *Watcher) Delete() error {
 
 // Notify sends a notification with the provided data to all Watchers of the
 // specified object.
-//  PREVIEW
 //
 // CAUTION: even if the error is not nil. the returned slices
 // might still contain data.
@@ -211,7 +202,6 @@ func (ioctx *IOContext) Notify(obj string, data []byte) ([]NotifyAck, []NotifyTi
 
 // NotifyWithTimeout is like Notify() but with a different timeout than the
 // default.
-//  PREVIEW
 //
 // Implements:
 //  int rados_notify2(rados_ioctx_t io, const char* o, const char* buf, int buf_len,
@@ -244,7 +234,6 @@ func (ioctx *IOContext) NotifyWithTimeout(obj string, data []byte, timeout time.
 // Ack sends an acknowledgement with the specified response data to the notfier
 // of the NotifyEvent. If a notify is not ack'ed, the originating Notify() call
 // blocks and eventiually times out.
-//  PREVIEW
 //
 // Implements:
 //  int rados_notify_ack(rados_ioctx_t io, const char *o, uint64_t notify_id,
@@ -274,7 +263,6 @@ func (ne *NotifyEvent) Ack(response []byte) error {
 }
 
 // WatcherFlush flushes all pending notifications of the cluster.
-//  PREVIEW
 //
 // Implements:
 //  int rados_watch_flush(rados_t cluster)
@@ -340,14 +328,6 @@ func decodeNotifyResponse(response *C.char, len C.size_t) ([]NotifyAck, []Notify
 //export watchNotifyCb
 func watchNotifyCb(_ unsafe.Pointer, notifyID C.uint64_t, id C.uint64_t,
 	notifierID C.uint64_t, cData unsafe.Pointer, dataLen C.size_t) {
-	watchersMtx.RLock()
-	w, ok := watchers[WatcherID(id)]
-	watchersMtx.RUnlock()
-	if !ok {
-		// usually this should not happen, but who knows
-		// TODO: some log message (once we have logging)
-		return
-	}
 	ev := NotifyEvent{
 		ID:         NotifyID(notifyID),
 		WatcherID:  WatcherID(id),
@@ -355,6 +335,14 @@ func watchNotifyCb(_ unsafe.Pointer, notifyID C.uint64_t, id C.uint64_t,
 	}
 	if dataLen > 0 {
 		ev.Data = C.GoBytes(cData, C.int(dataLen))
+	}
+	watchersMtx.RLock()
+	w, ok := watchers[WatcherID(id)]
+	watchersMtx.RUnlock()
+	if !ok {
+		// usually this should not happen, but who knows
+		log.Warnf("received notification for unknown watcher ID: %#v", ev)
+		return
 	}
 	select {
 	case <-w.done: // unblock when deleted
@@ -369,7 +357,7 @@ func watchErrorCb(_ unsafe.Pointer, id C.uint64_t, err C.int) {
 	watchersMtx.RUnlock()
 	if !ok {
 		// usually this should not happen, but who knows
-		// TODO: some log message (once we have logging)
+		log.Warnf("received error for unknown watcher ID: id=%d err=%#v", id, err)
 		return
 	}
 	select {

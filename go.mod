@@ -4,10 +4,10 @@ go 1.17
 
 require (
 	github.com/IBM/keyprotect-go-client v0.7.0
-	github.com/aws/aws-sdk-go v1.43.32
+	github.com/aws/aws-sdk-go v1.44.28
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.0
 	github.com/ceph/ceph-csi/api v0.0.0-00010101000000-000000000000
-	github.com/ceph/go-ceph v0.14.0
+	github.com/ceph/go-ceph v0.16.0
 	github.com/container-storage-interface/spec v1.5.0
 	github.com/csi-addons/replication-lib-utils v0.2.0
 	github.com/csi-addons/spec v0.1.2-0.20211220115741-32fa508dadbe
@@ -22,7 +22,7 @@ require (
 	github.com/onsi/gomega v1.19.0
 	github.com/pborman/uuid v1.2.1
 	github.com/prometheus/client_golang v1.12.1
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 	google.golang.org/grpc v1.45.0
@@ -144,7 +144,7 @@ require (
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiserver v0.23.5 // indirect
 	k8s.io/component-base v0.23.5 // indirect
 	k8s.io/component-helpers v0.23.5 // indirect

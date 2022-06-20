@@ -8,7 +8,7 @@ github.com/armon/go-metrics
 # github.com/armon/go-radix v1.0.0
 ## explicit
 github.com/armon/go-radix
-# github.com/aws/aws-sdk-go v1.43.32
+# github.com/aws/aws-sdk-go v1.44.28
 ## explicit; go 1.11
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/awserr
@@ -116,7 +116,7 @@ github.com/cenkalti/backoff/v3
 github.com/ceph/ceph-csi/api/deploy/kubernetes/nfs
 github.com/ceph/ceph-csi/api/deploy/kubernetes/rbd
 github.com/ceph/ceph-csi/api/deploy/ocp
-# github.com/ceph/go-ceph v0.14.0
+# github.com/ceph/go-ceph v0.16.0
 ## explicit; go 1.12
 github.com/ceph/go-ceph/cephfs/admin
 github.com/ceph/go-ceph/common/admin/manager
@@ -125,6 +125,7 @@ github.com/ceph/go-ceph/internal/callbacks
 github.com/ceph/go-ceph/internal/commands
 github.com/ceph/go-ceph/internal/cutil
 github.com/ceph/go-ceph/internal/errutil
+github.com/ceph/go-ceph/internal/log
 github.com/ceph/go-ceph/internal/retry
 github.com/ceph/go-ceph/internal/timespec
 github.com/ceph/go-ceph/rados
@@ -479,7 +480,7 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/stretchr/testify v1.7.1
+# github.com/stretchr/testify v1.7.2
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
@@ -741,7 +742,7 @@ gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+# gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
 # k8s.io/api v0.23.5 => k8s.io/api v0.23.5
